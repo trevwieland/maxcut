@@ -58,12 +58,21 @@ class MaxCutBM(AbstractMaxCut):
         may be accessed through the `get_solution` method.
         """
         # Run the RTR algorithm and gather candidate solutions.
+        if verbose: print("Generating Adjacency Matrix...")
         adjacent = nx.adjacency_matrix(self.graph).toarray()
+        
+        if verbose: print("Generating Riemannian Trust Region...")
         rtr = RiemannianTrustRegion(adjacent, self.dim_p, **self._kwargs)
+        
+        if verbose: print("Fetching List of Candidates...")
         candidates = rtr.get_candidates(verbose)
+        
         # Find and keep the best candidate.
+        if verbose: print("Searching for the best candidate...")
         matrix, cut, value = self._get_best_candidate(candidates)
         self._results = {'matrix': matrix, 'cut': cut, 'value': value}
+        
+        if verbose: print("Best Candidate found! Max Cut problem solved!")
         # Optionally be verbose about the results.
         if verbose:
             print(

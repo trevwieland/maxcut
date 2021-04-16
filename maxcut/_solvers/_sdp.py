@@ -50,7 +50,7 @@ class MaxCutSDP(AbstractMaxCut):
             raise KeyError("Solver '%s' is not installed." % solver)
         self.solver = getattr(cp, solver)
 
-    def solve(self, verbose=True):
+    def solve(self, verbose=True, mosek_num_threads=None):
         """Solve the SDP-relaxed max-cut problem.
 
         Resulting cut, value of the cut and solved matrix
@@ -60,7 +60,7 @@ class MaxCutSDP(AbstractMaxCut):
 
         # Solve the program. Marginally adjust the matrix to be PSD if needed.
         if verbose: print(f"Using {self.solver} to solve problem...")
-        matrix = self._solve_sdp(verbose=verbose)
+        matrix = self._solve_sdp(verbose=verbose, mosek_num_threads=mosek_num_threads)
 
         if verbose: print("Finding nearest psd...")
         matrix = nearest_psd(matrix)

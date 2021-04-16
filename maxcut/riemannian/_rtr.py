@@ -10,6 +10,7 @@ from maxcut.riemannian.stiefel import (
     stiefel_projection, stiefel_retraction, symblockdiag
 )
 
+from tqdm import tqdm
 
 class RiemannianTrustRegion:
     """Riemannian trust-region algorithm to solve SDP problems.
@@ -117,7 +118,8 @@ class RiemannianTrustRegion:
         # Iteratively solve and adjust trust-region subproblems.
         n_iter = 0
         stop_cause = 'maximum number of iterations reached'
-        for n_iter in range(self.maxiter):
+        if verbose: print("***Beginning Search loop for RTR...")
+        for n_iter in tqdm(range(self.maxiter)):
             # Solve the trust-region subproblem.
             eta_k, rho_k, x_new = self._solve_tr_subproblem(
                 x_k, value, gradient, get_hessian, delta
@@ -134,8 +136,11 @@ class RiemannianTrustRegion:
                 self.__candidates.append(x_k)
                 # Check a stopping criterion on the gradient's norm.
                 if froebenius(gradient) < 1e-6:
+                    if verbose: print("Quitting Early due to vanishing gradient!")
                     stop_cause = "vanishing gradient"
                     break
+        
+        if verbose: print("RTR Search has concluded due to:")
         # Optionally print-out stopping cause.
         if verbose:
             print(stop_cause)
