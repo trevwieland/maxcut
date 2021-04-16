@@ -5,6 +5,7 @@
 import cvxpy as cp
 import networkx as nx
 import numpy as np
+from time import time
 
 from maxcut._solvers.backend import (
     AbstractMaxCut, get_partition, get_cut_value
@@ -55,15 +56,25 @@ class MaxCutSDP(AbstractMaxCut):
         Resulting cut, value of the cut and solved matrix
         may be accessed through the `get_solution` method.
         """
+        s_time = time()
+
         # Solve the program. Marginally adjust the matrix to be PSD if needed.
-        matrix = self._solve_sdp()
+        if verbose: print(f"Using {self.solver} to solve problem...")
+        matrix = self._solve_sdp(verbose=verbose)
+
+        if verbose: print("Finding nearest psd...")
         matrix = nearest_psd(matrix)
+
         # Get the cut defined by the matrix.
+        if verbose: print("Getting the cut defined by the psd...")
         vectors = np.linalg.cholesky(matrix)
         cut = get_partition(vectors)
+
         # Get the value of the cut. Store results.
+        if verbose: print("Storing value of cut and other results...")
         value = get_cut_value(self.graph, cut)
         self._results = {'matrix': matrix, 'cut': cut, 'value': value}
+
         # Optionally be verbose about the results.
         if verbose:
             print(
@@ -71,20 +82,29 @@ class MaxCutSDP(AbstractMaxCut):
                 "Solution cuts off %f share of total weights." % value
             )
 
-    def _solve_sdp(self):
+        if verbose: print(f"Solving completed! Full Solve took {time() - s_time} seconds!")
+
+    def _solve_sdp(self, verbose=True):
         """Solve the SDP-relaxed max-cut problem.
 
         Return the matrix maximizing <C, 1 - X>
         """
         # Gather properties of the graph to cut.
+        if verbose: print("***Generating Adjacency Matrix...")
         n_nodes = len(self.graph)
         adjacent = nx.adjacency_matrix(self.graph).toarray()
+
         # Set up the semi-definite program.
+        if verbose: print("***Initializing semi-definite problem parameters...")
         matrix = cp.Variable((n_nodes, n_nodes), PSD=True)
         cut = .25 * cp.sum(cp.multiply(adjacent, 1 - matrix))
         problem = cp.Problem(cp.Maximize(cut), [cp.diag(matrix) == 1])
+
         # Solve the program.
-        problem.solve(getattr(cp, self.solver))
+        if verbose: print("***Using CVXPY to solve the problem!")
+        problem.solve(getattr(cp, self.solver), verbose=verbose)
+
+        if verbose: print("***CVXPY Solving has completed!")
         return matrix.value
 
 
