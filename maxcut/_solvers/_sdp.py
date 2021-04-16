@@ -84,7 +84,7 @@ class MaxCutSDP(AbstractMaxCut):
 
         if verbose: print(f"Solving completed! Full Solve took {time() - s_time} seconds!")
 
-    def _solve_sdp(self, verbose=True):
+    def _solve_sdp(self, verbose=True, mosek_num_threads=None):
         """Solve the SDP-relaxed max-cut problem.
 
         Return the matrix maximizing <C, 1 - X>
@@ -102,7 +102,11 @@ class MaxCutSDP(AbstractMaxCut):
 
         # Solve the program.
         if verbose: print("***Using CVXPY to solve the problem!")
-        problem.solve(getattr(cp, self.solver), verbose=verbose)
+        
+        if mosek_num_threads is None:
+            problem.solve(getattr(cp, self.solver), verbose=verbose)
+        else:
+            problem.solve(getattr(cp, self.solver), verbose=verbose, mosek_params={mosek.iparam.num_threads: mosek_num_threads})
 
         if verbose: print("***CVXPY Solving has completed!")
         return matrix.value
